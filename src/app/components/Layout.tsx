@@ -21,7 +21,10 @@ import {
   Factory,
   Truck,
   UserCircle,
-  Box
+  Box,
+  PackagePlus,
+  SlidersHorizontal,
+  BookOpen
 } from 'lucide-react';
 import { cn } from './ui/utils';
 
@@ -39,11 +42,14 @@ const erpModules = [
 const inventoryMenuItems = [
   { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', roles: ['admin', 'manager', 'operator', 'viewer'] },
   { path: '/inventory', icon: Package, label: 'Inventario', roles: ['admin', 'manager', 'operator', 'viewer'] },
+  { path: '/goods-receipt', icon: PackagePlus, label: 'Ingreso de Mercadería', roles: ['admin', 'manager', 'operator'] },
+  { path: '/inventory-adjustment', icon: SlidersHorizontal, label: 'Ajuste de Inventario', roles: ['admin', 'manager'] },
   { path: '/transfers', icon: Warehouse, label: 'Traspasos', roles: ['admin', 'manager', 'operator'] },
   { path: '/reception', icon: ClipboardCheck, label: 'Recepción', roles: ['admin', 'receptionist'] },
   { path: '/suppliers', icon: Users, label: 'Proveedores', roles: ['admin', 'manager'] },
   { path: '/reports', icon: FileText, label: 'Reportes', roles: ['admin', 'manager', 'viewer'] },
   { path: '/settings', icon: Settings, label: 'Configuración', roles: ['admin'] },
+  { path: '/manual', icon: BookOpen, label: 'Manual de Usuario', roles: ['admin', 'manager', 'operator', 'receptionist', 'viewer'] },
 ];
 
 export default function Layout() {

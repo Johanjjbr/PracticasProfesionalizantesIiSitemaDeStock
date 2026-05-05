@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, ReactNode } from 'react';
-import { User, Product, Supplier, Transfer, Movement } from '../types';
+import { User, Product, Supplier, Transfer, Movement, GoodsReceipt, InventoryAdjustment } from '../types';
 
 interface AppContextType {
   user: User | null;
@@ -9,6 +9,8 @@ interface AppContextType {
   suppliers: Supplier[];
   transfers: Transfer[];
   movements: Movement[];
+  goodsReceipts: GoodsReceipt[];
+  inventoryAdjustments: InventoryAdjustment[];
   addProduct: (product: Omit<Product, 'id' | 'lastUpdated'>) => void;
   updateProduct: (id: string, product: Partial<Product>) => void;
   deleteProduct: (id: string) => void;
@@ -20,26 +22,79 @@ interface AppContextType {
   validateTransfer: (id: string, quantityReceived: number, notes: string, receptionist: string) => void;
   rejectTransfer: (id: string, notes: string, receptionist: string) => void;
   addMovement: (movement: Omit<Movement, 'id' | 'timestamp'>) => void;
+  addGoodsReceipt: (receipt: Omit<GoodsReceipt, 'id' | 'createdAt'>) => void;
+  addInventoryAdjustment: (adjustment: Omit<InventoryAdjustment, 'id' | 'createdAt'>) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 // Mock data
 const mockProducts: Product[] = [
-  { id: '1', sku: 'SKU-001', name: 'Tornillo M8x20', category: 'Ferretería', warehouse: 'Almacén Central', currentStock: 45, minStock: 100, unitPrice: 0.25, lastUpdated: '2026-04-15' },
-  { id: '2', sku: 'SKU-002', name: 'Tuerca Hexagonal M8', category: 'Ferretería', warehouse: 'Almacén Central', currentStock: 320, minStock: 200, unitPrice: 0.15, lastUpdated: '2026-04-15' },
-  { id: '3', sku: 'SKU-003', name: 'Cable eléctrico 2.5mm', category: 'Electricidad', warehouse: 'Almacén Norte', currentStock: 15, minStock: 50, unitPrice: 1.80, lastUpdated: '2026-04-14' },
-  { id: '4', sku: 'SKU-004', name: 'Interruptor Simple', category: 'Electricidad', warehouse: 'Almacén Central', currentStock: 89, minStock: 100, unitPrice: 3.50, lastUpdated: '2026-04-15' },
-  { id: '5', sku: 'SKU-005', name: 'Válvula Check 1/2"', category: 'Plomería', warehouse: 'Almacén Sur', currentStock: 5, minStock: 30, unitPrice: 12.00, lastUpdated: '2026-04-13' },
-  { id: '6', sku: 'SKU-006', name: 'Tubo PVC 3/4"', category: 'Plomería', warehouse: 'Almacén Norte', currentStock: 150, minStock: 80, unitPrice: 4.20, lastUpdated: '2026-04-15' },
-  { id: '7', sku: 'SKU-007', name: 'Pintura Látex Blanco', category: 'Pinturas', warehouse: 'Almacén Central', currentStock: 28, minStock: 40, unitPrice: 15.50, lastUpdated: '2026-04-14' },
-  { id: '8', sku: 'SKU-008', name: 'Rodillo 9"', category: 'Pinturas', warehouse: 'Almacén Central', currentStock: 67, minStock: 50, unitPrice: 2.80, lastUpdated: '2026-04-15' },
+  {
+    id: '1', sku: 'SKU-001', name: 'Tornillo M8x20', description: 'Tornillo de acero inoxidable', detailedDescription: 'Tornillo métrico M8x20mm de acero inoxidable 304, cabeza hexagonal, ideal para estructuras y ensambles industriales.',
+    category: 'Ferretería', unitOfMeasure: 'Unidad', warehouse: 'Almacén Central', location: 'Estante A-01',
+    currentStock: 45, minStock: 100, unitPrice: 0.25, lastPurchasePrice: 0.20, currency: 'ARS', isActive: true, lastUpdated: '2026-04-15'
+  },
+  {
+    id: '2', sku: 'SKU-002', name: 'Tuerca Hexagonal M8', description: 'Tuerca hexagonal galvanizada',
+    category: 'Ferretería', unitOfMeasure: 'Unidad', warehouse: 'Almacén Central', location: 'Estante A-02',
+    currentStock: 320, minStock: 200, unitPrice: 0.15, lastPurchasePrice: 0.12, currency: 'ARS', isActive: true, lastUpdated: '2026-04-15'
+  },
+  {
+    id: '3', sku: 'SKU-003', name: 'Cable eléctrico 2.5mm', description: 'Cable de cobre unipolar',
+    category: 'Electricidad', unitOfMeasure: 'Metro', warehouse: 'Almacén Norte', location: 'Estante B-05',
+    currentStock: 15, minStock: 50, unitPrice: 1.80, lastPurchasePrice: 1.50, currency: 'ARS', isActive: true, lastUpdated: '2026-04-14'
+  },
+  {
+    id: '4', sku: 'SKU-004', name: 'Interruptor Simple', description: 'Interruptor eléctrico domiciliario',
+    category: 'Electricidad', unitOfMeasure: 'Unidad', warehouse: 'Almacén Central', location: 'Estante B-01',
+    currentStock: 89, minStock: 100, unitPrice: 3.50, lastPurchasePrice: 2.80, currency: 'ARS', isActive: true, lastUpdated: '2026-04-15'
+  },
+  {
+    id: '5', sku: 'SKU-005', name: 'Válvula Check 1/2"', description: 'Válvula de retención de bronce',
+    category: 'Plomería', unitOfMeasure: 'Unidad', warehouse: 'Almacén Sur', location: 'Estante C-03',
+    currentStock: 5, minStock: 30, unitPrice: 12.00, lastPurchasePrice: 9.50, currency: 'ARS', isActive: true, lastUpdated: '2026-04-13'
+  },
+  {
+    id: '6', sku: 'SKU-006', name: 'Tubo PVC 3/4"', description: 'Cañería PVC rígida presión',
+    category: 'Plomería', unitOfMeasure: 'Metro', warehouse: 'Almacén Norte', location: 'Pasillo D-01',
+    currentStock: 150, minStock: 80, unitPrice: 4.20, lastPurchasePrice: 3.60, currency: 'ARS', isActive: true, lastUpdated: '2026-04-15'
+  },
+  {
+    id: '7', sku: 'SKU-007', name: 'Pintura Látex Blanco', description: 'Pintura látex interior/exterior',
+    category: 'Pinturas', unitOfMeasure: 'Litro', warehouse: 'Almacén Central', location: 'Estante E-02',
+    currentStock: 28, minStock: 40, unitPrice: 15.50, lastPurchasePrice: 12.00, currency: 'ARS', isActive: true, lastUpdated: '2026-04-14'
+  },
+  {
+    id: '8', sku: 'SKU-008', name: 'Rodillo 9"', description: 'Rodillo de pintura con mango',
+    category: 'Pinturas', unitOfMeasure: 'Unidad', warehouse: 'Almacén Central', location: 'Estante E-04',
+    currentStock: 67, minStock: 50, unitPrice: 2.80, lastPurchasePrice: 2.20, currency: 'ARS', isActive: true, lastUpdated: '2026-04-15'
+  },
 ];
 
 const mockSuppliers: Supplier[] = [
-  { id: '1', name: 'Ferretería Industrial S.A.', contact: 'Carlos Pérez', email: 'carlos@ferreteria.com', phone: '+1234567890', address: 'Av. Industrial 123', status: 'active' },
-  { id: '2', name: 'Distribuidora Eléctrica', contact: 'Ana Martínez', email: 'ana@electrica.com', phone: '+1234567891', address: 'Calle Comercio 456', status: 'active' },
-  { id: '3', name: 'Plomería & Materiales', contact: 'Roberto Silva', email: 'roberto@plomeria.com', phone: '+1234567892', address: 'Zona Industrial 789', status: 'active' },
+  {
+    id: '1', name: 'Ferretería Industrial S.A.', fantasyName: 'FerroIndustrial', cuit: '30-12345678-9',
+    contact: 'Carlos Pérez', email: 'carlos@ferreteria.com', phone: '+5491134567890',
+    address: 'Av. Industrial 123', city: 'Buenos Aires', country: 'Argentina', postalCode: 'C1414',
+    website: 'www.ferroindustrial.com.ar', vatCondition: 'Responsable Inscripto', category: 'Ferretería',
+    paymentTerm: '30 días', bankAlias: 'ferro.industrial.sa', observations: 'Proveedor principal de materiales de ferretería.',
+    status: 'active'
+  },
+  {
+    id: '2', name: 'Distribuidora Eléctrica', fantasyName: 'ElectroDist', cuit: '30-98765432-1',
+    contact: 'Ana Martínez', email: 'ana@electrica.com', phone: '+5491134567891',
+    address: 'Calle Comercio 456', city: 'Córdoba', country: 'Argentina', postalCode: 'X5000',
+    vatCondition: 'Responsable Inscripto', category: 'Electricidad', paymentTerm: '15 días',
+    status: 'active'
+  },
+  {
+    id: '3', name: 'Plomería & Materiales', cuit: '20-45678901-3',
+    contact: 'Roberto Silva', email: 'roberto@plomeria.com', phone: '+5491134567892',
+    address: 'Zona Industrial 789', city: 'Rosario', country: 'Argentina', postalCode: 'S2000',
+    vatCondition: 'Monotributista', category: 'Plomería', paymentTerm: 'Contado',
+    status: 'active'
+  },
 ];
 
 const mockTransfers: Transfer[] = [
@@ -54,15 +109,25 @@ const mockMovements: Movement[] = [
   { id: '3', type: 'transfer', productId: '2', productName: 'Tuerca Hexagonal M8', quantity: 100, warehouse: 'Almacén Central', operator: 'Pedro Ramírez', timestamp: '2026-04-13T11:45:00', notes: 'Reabastecimiento' },
 ];
 
+const mockGoodsReceipts: GoodsReceipt[] = [
+  { id: '1', supplierId: '1', supplierName: 'Ferretería Industrial S.A.', productId: '2', productName: 'Tuerca Hexagonal M8', sku: 'SKU-002', quantity: 500, unitPrice: 0.12, totalAmount: 60.00, warehouse: 'Almacén Central', invoiceNumber: 'FAC-2026-001', notes: 'Pedido de reposición', operator: 'Juan García', createdAt: '2026-04-10T09:00:00' },
+  { id: '2', supplierId: '2', supplierName: 'Distribuidora Eléctrica', productId: '3', productName: 'Cable eléctrico 2.5mm', sku: 'SKU-003', quantity: 100, unitPrice: 1.50, totalAmount: 150.00, warehouse: 'Almacén Norte', invoiceNumber: 'FAC-2026-045', operator: 'María López', createdAt: '2026-04-12T11:30:00' },
+];
+
+const mockInventoryAdjustments: InventoryAdjustment[] = [
+  { id: '1', productId: '7', productName: 'Pintura Látex Blanco', sku: 'SKU-007', warehouse: 'Almacén Central', previousStock: 30, adjustmentQuantity: -2, newStock: 28, reason: 'Producto dañado', type: 'decrease', operator: 'Admin User', createdAt: '2026-04-14T15:00:00', notes: '2 latas con envase roto' },
+];
+
 export function AppProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [products, setProducts] = useState<Product[]>(mockProducts);
   const [suppliers, setSuppliers] = useState<Supplier[]>(mockSuppliers);
   const [transfers, setTransfers] = useState<Transfer[]>(mockTransfers);
   const [movements, setMovements] = useState<Movement[]>(mockMovements);
+  const [goodsReceipts, setGoodsReceipts] = useState<GoodsReceipt[]>(mockGoodsReceipts);
+  const [inventoryAdjustments, setInventoryAdjustments] = useState<InventoryAdjustment[]>(mockInventoryAdjustments);
 
   const login = async (email: string, password: string, role: string): Promise<boolean> => {
-    // Mock authentication
     if (email && password) {
       const mockUser: User = {
         id: '1',
@@ -91,17 +156,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
       id: Date.now().toString(),
       lastUpdated: new Date().toISOString().split('T')[0],
     };
-    setProducts([...products, newProduct]);
+    setProducts(prev => [...prev, newProduct]);
   };
 
   const updateProduct = (id: string, updates: Partial<Product>) => {
-    setProducts(products.map(p => 
+    setProducts(prev => prev.map(p =>
       p.id === id ? { ...p, ...updates, lastUpdated: new Date().toISOString().split('T')[0] } : p
     ));
   };
 
   const deleteProduct = (id: string) => {
-    setProducts(products.filter(p => p.id !== id));
+    setProducts(prev => prev.filter(p => p.id !== id));
   };
 
   const addSupplier = (supplier: Omit<Supplier, 'id'>) => {
@@ -109,15 +174,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
       ...supplier,
       id: Date.now().toString(),
     };
-    setSuppliers([...suppliers, newSupplier]);
+    setSuppliers(prev => [...prev, newSupplier]);
   };
 
   const updateSupplier = (id: string, updates: Partial<Supplier>) => {
-    setSuppliers(suppliers.map(s => s.id === id ? { ...s, ...updates } : s));
+    setSuppliers(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s));
   };
 
   const deleteSupplier = (id: string) => {
-    setSuppliers(suppliers.filter(s => s.id !== id));
+    setSuppliers(prev => prev.filter(s => s.id !== id));
   };
 
   const createTransfer = (transfer: Omit<Transfer, 'id' | 'createdAt' | 'status'>) => {
@@ -127,11 +192,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       status: 'pending',
       createdAt: new Date().toISOString(),
     };
-    setTransfers([...transfers, newTransfer]);
+    setTransfers(prev => [...prev, newTransfer]);
   };
 
   const updateTransferStatus = (id: string, status: Transfer['status']) => {
-    setTransfers(transfers.map(t =>
+    setTransfers(prev => prev.map(t =>
       t.id === id ? {
         ...t,
         status,
@@ -145,7 +210,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const transfer = transfers.find(t => t.id === id);
     if (!transfer) return;
 
-    setTransfers(transfers.map(t =>
+    setTransfers(prev => prev.map(t =>
       t.id === id ? {
         ...t,
         status: 'completed',
@@ -156,16 +221,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       } : t
     ));
 
-    // Update product stock
     if (transfer.productId) {
-      setProducts(products.map(p =>
+      setProducts(prev => prev.map(p =>
         p.id === transfer.productId && p.warehouse === transfer.destinationWarehouse
           ? { ...p, currentStock: p.currentStock + quantityReceived }
           : p
       ));
     }
 
-    // Add movement
     addMovement({
       type: 'transfer',
       productId: transfer.productId || '',
@@ -178,7 +241,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const rejectTransfer = (id: string, notes: string, receptionist: string) => {
-    setTransfers(transfers.map(t =>
+    setTransfers(prev => prev.map(t =>
       t.id === id ? {
         ...t,
         status: 'rejected',
@@ -194,7 +257,66 @@ export function AppProvider({ children }: { children: ReactNode }) {
       id: Date.now().toString(),
       timestamp: new Date().toISOString(),
     };
-    setMovements([newMovement, ...movements]);
+    setMovements(prev => [newMovement, ...prev]);
+  };
+
+  const addGoodsReceipt = (receipt: Omit<GoodsReceipt, 'id' | 'createdAt'>) => {
+    const newReceipt: GoodsReceipt = {
+      ...receipt,
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString(),
+    };
+    setGoodsReceipts(prev => [newReceipt, ...prev]);
+
+    // Update product stock
+    setProducts(prev => prev.map(p =>
+      p.id === receipt.productId && p.warehouse === receipt.warehouse
+        ? {
+            ...p,
+            currentStock: p.currentStock + receipt.quantity,
+            lastPurchasePrice: receipt.unitPrice,
+            lastUpdated: new Date().toISOString().split('T')[0],
+          }
+        : p
+    ));
+
+    // Record movement
+    addMovement({
+      type: 'in',
+      productId: receipt.productId,
+      productName: receipt.productName,
+      quantity: receipt.quantity,
+      warehouse: receipt.warehouse,
+      operator: receipt.operator,
+      notes: `Ingreso de ${receipt.supplierName}${receipt.invoiceNumber ? ` - Factura: ${receipt.invoiceNumber}` : ''}`,
+    });
+  };
+
+  const addInventoryAdjustment = (adjustment: Omit<InventoryAdjustment, 'id' | 'createdAt'>) => {
+    const newAdjustment: InventoryAdjustment = {
+      ...adjustment,
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString(),
+    };
+    setInventoryAdjustments(prev => [newAdjustment, ...prev]);
+
+    // Update product stock
+    setProducts(prev => prev.map(p =>
+      p.id === adjustment.productId && p.warehouse === adjustment.warehouse
+        ? { ...p, currentStock: adjustment.newStock, lastUpdated: new Date().toISOString().split('T')[0] }
+        : p
+    ));
+
+    // Record movement
+    addMovement({
+      type: 'adjustment',
+      productId: adjustment.productId,
+      productName: adjustment.productName,
+      quantity: Math.abs(adjustment.adjustmentQuantity),
+      warehouse: adjustment.warehouse,
+      operator: adjustment.operator,
+      notes: `Ajuste (${adjustment.type === 'increase' ? '+' : '-'}${Math.abs(adjustment.adjustmentQuantity)}): ${adjustment.reason}`,
+    });
   };
 
   return (
@@ -207,6 +329,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         suppliers,
         transfers,
         movements,
+        goodsReceipts,
+        inventoryAdjustments,
         addProduct,
         updateProduct,
         deleteProduct,
@@ -218,6 +342,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         validateTransfer,
         rejectTransfer,
         addMovement,
+        addGoodsReceipt,
+        addInventoryAdjustment,
       }}
     >
       {children}
