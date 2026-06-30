@@ -46,16 +46,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [movements, setMovements] = useState<Movement[]>([]);
   const [goodsReceipts, setGoodsReceipts] = useState<GoodsReceipt[]>([]);
   const [inventoryAdjustments, setInventoryAdjustments] = useState<InventoryAdjustment[]>([]);
+  const [dbReady, setDbReady] = useState(false);
+  const [dbError, setDbError] = useState<string | null>(null);
 
   useEffect(() => {
-    initDatabase().then(() => {
-      setProducts(productRepository.getAll());
-      setSuppliers(supplierRepository.getAll());
-      setTransfers(transferRepository.getAll());
-      setMovements(movementRepository.getAll());
-      setGoodsReceipts(goodsReceiptRepository.getAll());
-      setInventoryAdjustments(inventoryAdjustmentRepository.getAll());
-    });
+    initDatabase()
+      .then(() => {
+        setProducts(productRepository.getAll());
+        setSuppliers(supplierRepository.getAll());
+        setTransfers(transferRepository.getAll());
+        setMovements(movementRepository.getAll());
+        setGoodsReceipts(goodsReceiptRepository.getAll());
+        setInventoryAdjustments(inventoryAdjustmentRepository.getAll());
+        setDbReady(true);
+      })
+      .catch((err) => {
+        console.error('Database initialization failed:', err);
+        setDbError(err?.message || String(err));
+      });
   }, []);
 
   const login = async (email: string, password: string, role: string): Promise<boolean> => {
@@ -218,6 +226,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
     refreshProducts();
   };
 
+  const loadingScreen = !dbReady ? (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', fontFamily: 'system-ui, sans-serif' }}>
+      <div style={{ fontSize: 36, marginBottom: 16, fontWeight: 600 }}>Sistema de Stock</div>
+      <div style={{ width: 40, height: 40, border: '3px solid #e0e0e0', borderTopColor: '#333', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+      <p style={{ marginTop: 16, color: '#666' }}>Inicializando base de datos...</p>
+      <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+    </div>
+  ) : dbError ? (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', fontFamily: 'system-ui, sans-serif', padding: 20, textAlign: 'center' }}>
+      <div style={{ fontSize: 48, marginBottom: 16 }}>&#9888;</div>
+      <h1 style={{ fontSize: 20, fontWeight: 600, marginBottom: 8 }}>Error al iniciar la base de datos</h1>
+      <p style={{ color: '#666', maxWidth: 400, marginBottom: 16 }}>{dbError}</p>
+      <p style={{ color: '#999', fontSize: 14 }}>Revis\u00e1 la consola del navegador (F12) para m\u00e1s detalles.</p>
+    </div>
+  ) : null;
+
   return (
     <AppContext.Provider
       value={{
@@ -245,7 +269,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         addInventoryAdjustment,
       }}
     >
-      {children}
+      {loadingScreen || children}
     </AppContext.Provider>
   );
 }

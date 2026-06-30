@@ -45,18 +45,33 @@ export async function initDatabase(): Promise<void> {
   if (initPromise) return initPromise;
 
   initPromise = (async () => {
-    SQL = await initSqlJs({
-      locateFile: () => '/sql-wasm-browser.wasm',
-    });
+    console.log('[DB] Initializing SQLite...');
+    try {
+      SQL = await initSqlJs({
+        locateFile: () => '/sql-wasm-browser.wasm',
+      });
+      console.log('[DB] SQL.js loaded successfully');
+    } catch (e) {
+      console.error('[DB] Failed to load SQL.js:', e);
+      throw e;
+    }
 
-    const saved = await loadFromIDB();
+    try {
+      const saved = await loadFromIDB();
+      console.log('[DB] Loaded from IndexedDB:', saved ? 'found' : 'not found');
 
-    if (saved) {
-      db = new SQL.Database(saved);
-    } else {
-      db = new SQL.Database();
-      db.run(INIT_SQL);
-      await persistDatabase();
+      if (saved) {
+        db = new SQL.Database(saved);
+        console.log('[DB] Restored database from IndexedDB');
+      } else {
+        db = new SQL.Database();
+        db.run(INIT_SQL);
+        await persistDatabase();
+        console.log('[DB] Created new database with seed data');
+      }
+    } catch (e) {
+      console.error('[DB] Failed to initialize database:', e);
+      throw e;
     }
   })();
 
