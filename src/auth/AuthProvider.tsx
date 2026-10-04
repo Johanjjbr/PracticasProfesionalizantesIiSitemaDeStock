@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { queryClient } from '@/lib/queryClient';
 import type { Tables } from '@/lib/database.types';
 import type { Rol } from './permisos';
+import { suscripcionDe, type Suscripcion } from '@/lib/suscripcion';
 
 export type Empresa = Tables<'empresas'>;
 export type Perfil = Tables<'perfiles'>;
@@ -20,7 +21,12 @@ interface AuthContextValue {
   perfil: Perfil | null;
   membresias: Membresia[];
   empresa: Empresa | null;
+  /** Rol efectivo: si la suscripción venció, todos pasan a 'consulta' (solo lectura). */
   rol: Rol | null;
+  /** Rol asignado en la empresa, sin el ajuste por suscripción. */
+  rolReal: Rol | null;
+  suscripcion: Suscripcion | null;
+  soloLectura: boolean;
   seleccionarEmpresa: (empresaId: string) => void;
   iniciarSesion: (email: string, password: string) => Promise<void>;
   cerrarSesion: () => Promise<void>;
@@ -96,7 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const propias = new Set(lista.map((m) => m.empresa.id));
         lista = [
           ...lista,
-          ...(todas ?? []).filter((e) => !propias.has(e.id)).map((e) => ({ empresa: e, rol: 'admin' as Rol })),
+          ...(todas ?? []).filter((e) => e.activa && !propias.has(e.id)).map((e) => ({ empresa: e, rol: 'admin' as Rol })),
         ];
       }
       lista.sort((a, b) => a.empresa.nombre.localeCompare(b.empresa.nombre));
@@ -133,13 +139,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setPerfil(null);
   }, []);
 
+  const suscripcion = useMemo(() => (activa ? suscripcionDe(activa.empresa) : null), [activa]);
+  const esSuperadmin = !!perfil?.superadmin;
+  const soloLectura = !esSuperadmin && suscripcion?.estado === 'vencida';
+
   const value: AuthContextValue = {
     cargando: !sessionLista || cargandoDatos,
     session,
     perfil,
     membresias,
     empresa: activa?.empresa ?? null,
-    rol: activa?.rol ?? null,
+    rol: activa ? (soloLectura ? 'consulta' : activa.rol) : null,
+    rolReal: activa?.rol ?? null,
+    suscripcion,
+    soloLectura,
     seleccionarEmpresa,
     iniciarSesion,
     cerrarSesion,

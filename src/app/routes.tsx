@@ -1,5 +1,5 @@
 import { createBrowserRouter, Navigate } from 'react-router';
-import { RequireAuth, RequireRol } from '@/auth/guards';
+import { Inicio, RequireAuth, RequireRol, RequireSesion, RequireSuperadmin } from '@/auth/guards';
 import Layout from './layout/Layout';
 import { ITEMS_MENU } from './layout/menu';
 import EnConstruccion from './pages/EnConstruccion';
@@ -19,6 +19,9 @@ import ReportesPage from '@/features/reportes/ReportesPage';
 import UsuariosPage from '@/features/usuarios/UsuariosPage';
 import ConfiguracionPage from '@/features/configuracion/ConfiguracionPage';
 import MiCuentaPage from '@/features/configuracion/MiCuentaPage';
+import PlataformaLayout from '@/features/plataforma/PlataformaLayout';
+import EmpresasPlataformaPage from '@/features/plataforma/EmpresasPlataformaPage';
+import PlanesPage from '@/features/plataforma/PlanesPage';
 
 /** Pantallas ya implementadas. El resto del menú muestra "En construcción". */
 const PANTALLAS: Record<string, React.ReactElement> = {
@@ -47,7 +50,7 @@ export const router = createBrowserRouter([
       </RequireAuth>
     ),
     children: [
-      { index: true, element: <Navigate to="/dashboard" replace /> },
+      { index: true, element: <Inicio /> },
       ...ITEMS_MENU.map((item) => ({
         path: item.ruta.slice(1),
         element: (
@@ -65,6 +68,20 @@ export const router = createBrowserRouter([
           </RequireRol>
         ),
       },
+    ],
+  },
+  {
+    path: '/plataforma',
+    element: (
+      <RequireSesion>
+        <RequireSuperadmin>
+          <PlataformaLayout />
+        </RequireSuperadmin>
+      </RequireSesion>
+    ),
+    children: [
+      { index: true, element: <EmpresasPlataformaPage /> },
+      { path: 'planes', element: <PlanesPage /> },
     ],
   },
   { path: '*', element: <Navigate to="/" replace /> },

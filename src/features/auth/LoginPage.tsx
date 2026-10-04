@@ -23,7 +23,7 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [enviando, setEnviando] = useState(false);
 
-  const destino = (location.state as { desde?: string } | null)?.desde ?? '/dashboard';
+  const destino = (location.state as { desde?: string } | null)?.desde ?? '/';
   if (!cargando && session) return <Navigate to={destino} replace />;
 
   const onSubmit = async (e: FormEvent) => {

@@ -1,6 +1,3 @@
-// Generado desde Supabase (proyecto bgrbbpviaoozrpbpoywu). No editar a mano:
-// regenerar después de cada migración.
-
 export type Json =
   | string
   | number
@@ -508,12 +505,17 @@ export type Database = {
           config: Json
           created_at: string
           cuit: string | null
+          dias_gracia: number
           direccion: string | null
           email: string | null
           id: string
           logo_url: string | null
+          motivo_suspension: string | null
           nombre: string
+          pagado_hasta: string | null
+          plan_id: string | null
           rubro: Database["public"]["Enums"]["rubro_empresa"]
+          suspendida: boolean
           telefono: string | null
           updated_at: string
         }
@@ -522,12 +524,17 @@ export type Database = {
           config?: Json
           created_at?: string
           cuit?: string | null
+          dias_gracia?: number
           direccion?: string | null
           email?: string | null
           id?: string
           logo_url?: string | null
+          motivo_suspension?: string | null
           nombre: string
+          pagado_hasta?: string | null
+          plan_id?: string | null
           rubro?: Database["public"]["Enums"]["rubro_empresa"]
+          suspendida?: boolean
           telefono?: string | null
           updated_at?: string
         }
@@ -536,16 +543,29 @@ export type Database = {
           config?: Json
           created_at?: string
           cuit?: string | null
+          dias_gracia?: number
           direccion?: string | null
           email?: string | null
           id?: string
           logo_url?: string | null
+          motivo_suspension?: string | null
           nombre?: string
+          pagado_hasta?: string | null
+          plan_id?: string | null
           rubro?: Database["public"]["Enums"]["rubro_empresa"]
+          suspendida?: boolean
           telefono?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "empresas_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "planes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       movimientos_stock: {
         Row: {
@@ -614,6 +634,82 @@ export type Database = {
           },
         ]
       }
+      pagos_suscripcion: {
+        Row: {
+          anulado: boolean
+          anulado_motivo: string | null
+          created_at: string
+          desde: string
+          empresa_id: string
+          fecha: string
+          hasta: string
+          hasta_anterior: string | null
+          id: string
+          medio: string
+          meses: number
+          monto: number
+          nota: string | null
+          plan_id: string | null
+          registrado_por: string | null
+        }
+        Insert: {
+          anulado?: boolean
+          anulado_motivo?: string | null
+          created_at?: string
+          desde: string
+          empresa_id: string
+          fecha: string
+          hasta: string
+          hasta_anterior?: string | null
+          id?: string
+          medio?: string
+          meses: number
+          monto: number
+          nota?: string | null
+          plan_id?: string | null
+          registrado_por?: string | null
+        }
+        Update: {
+          anulado?: boolean
+          anulado_motivo?: string | null
+          created_at?: string
+          desde?: string
+          empresa_id?: string
+          fecha?: string
+          hasta?: string
+          hasta_anterior?: string | null
+          id?: string
+          medio?: string
+          meses?: number
+          monto?: number
+          nota?: string | null
+          plan_id?: string | null
+          registrado_por?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pagos_suscripcion_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pagos_suscripcion_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "planes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pagos_suscripcion_registrado_por_fkey"
+            columns: ["registrado_por"]
+            isOneToOne: false
+            referencedRelation: "perfiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       perfiles: {
         Row: {
           created_at: string
@@ -637,6 +733,42 @@ export type Database = {
           id?: string
           nombre?: string | null
           superadmin?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      planes: {
+        Row: {
+          activo: boolean
+          created_at: string
+          descripcion: string | null
+          id: string
+          max_productos: number | null
+          max_usuarios: number | null
+          nombre: string
+          precio_mensual: number
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          max_productos?: number | null
+          max_usuarios?: number | null
+          nombre: string
+          precio_mensual?: number
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          max_productos?: number | null
+          max_usuarios?: number | null
+          nombre?: string
+          precio_mensual?: number
           updated_at?: string
         }
         Relationships: []
@@ -1003,7 +1135,11 @@ export type Database = {
     }
     Functions: {
       abrir_caja: {
-        Args: { p_empresa: string; p_monto_inicial: number; p_observaciones?: string }
+        Args: {
+          p_empresa: string
+          p_monto_inicial: number
+          p_observaciones?: string
+        }
         Returns: {
           apertura_at: string
           cerrada_por: string | null
@@ -1057,6 +1193,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      anular_pago_suscripcion: {
+        Args: { p_motivo: string; p_pago: string }
+        Returns: undefined
+      }
       anular_venta: {
         Args: { p_motivo: string; p_venta: string }
         Returns: {
@@ -1094,7 +1234,11 @@ export type Database = {
         Returns: undefined
       }
       cerrar_caja: {
-        Args: { p_efectivo_contado: number; p_observaciones?: string; p_sesion: string }
+        Args: {
+          p_efectivo_contado: number
+          p_observaciones?: string
+          p_sesion: string
+        }
         Returns: {
           apertura_at: string
           cerrada_por: string | null
@@ -1151,6 +1295,214 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "caja_movimientos"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      plataforma_activar_empresa: {
+        Args: { p_activa: boolean; p_empresa: string }
+        Returns: undefined
+      }
+      plataforma_actualizar_empresa: {
+        Args: {
+          p_dias_gracia: number
+          p_empresa: string
+          p_nombre: string
+          p_pagado_hasta: string
+          p_plan: string
+          p_rubro: Database["public"]["Enums"]["rubro_empresa"]
+        }
+        Returns: undefined
+      }
+      plataforma_crear_empresa: {
+        Args: {
+          p_dias_gracia?: number
+          p_nombre: string
+          p_pagado_hasta?: string
+          p_plan?: string
+          p_rubro: Database["public"]["Enums"]["rubro_empresa"]
+        }
+        Returns: string
+      }
+      plataforma_empresas: {
+        Args: never
+        Returns: {
+          activa: boolean
+          created_at: string
+          dias_gracia: number
+          estado: string
+          id: string
+          max_productos: number
+          max_usuarios: number
+          motivo_suspension: string
+          nombre: string
+          pagado_hasta: string
+          plan_id: string
+          plan_nombre: string
+          precio_mensual: number
+          productos_activos: number
+          rubro: Database["public"]["Enums"]["rubro_empresa"]
+          suspendida: boolean
+          ultima_venta: string
+          usuarios_activos: number
+          ventas_30d: number
+        }[]
+      }
+      plataforma_suspender_empresa: {
+        Args: { p_empresa: string; p_motivo?: string; p_suspender: boolean }
+        Returns: undefined
+      }
+      registrar_ajuste: {
+        Args: {
+          p_empresa: string
+          p_items: Json
+          p_motivo: Database["public"]["Enums"]["motivo_ajuste"]
+          p_observaciones?: string
+        }
+        Returns: {
+          created_at: string
+          empresa_id: string
+          fecha: string
+          id: string
+          motivo: Database["public"]["Enums"]["motivo_ajuste"]
+          numero: number
+          observaciones: string | null
+          usuario_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "ajustes"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      registrar_compra: {
+        Args: {
+          p_actualizar_costos?: boolean
+          p_empresa: string
+          p_fecha_comprobante?: string
+          p_items: Json
+          p_nro_comprobante?: string
+          p_observaciones?: string
+          p_pagada_desde_caja?: boolean
+          p_proveedor: string
+          p_tipo_comprobante?: string
+        }
+        Returns: {
+          actualizo_costos: boolean
+          anulada_at: string | null
+          anulada_por: string | null
+          caja_sesion_id: string | null
+          created_at: string
+          empresa_id: string
+          estado: Database["public"]["Enums"]["estado_compra"]
+          fecha: string
+          fecha_comprobante: string | null
+          id: string
+          motivo_anulacion: string | null
+          nro_comprobante: string | null
+          numero: number
+          observaciones: string | null
+          pagada_desde_caja: boolean
+          proveedor_id: string
+          tipo_comprobante: string | null
+          total: number
+          usuario_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "compras"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      registrar_pago_suscripcion: {
+        Args: {
+          p_empresa: string
+          p_fecha?: string
+          p_medio?: string
+          p_meses: number
+          p_monto: number
+          p_nota?: string
+        }
+        Returns: {
+          anulado: boolean
+          anulado_motivo: string | null
+          created_at: string
+          desde: string
+          empresa_id: string
+          fecha: string
+          hasta: string
+          hasta_anterior: string | null
+          id: string
+          medio: string
+          meses: number
+          monto: number
+          nota: string | null
+          plan_id: string | null
+          registrado_por: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "pagos_suscripcion"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      registrar_stock_inicial: {
+        Args: { p_cantidad: number; p_obs?: string; p_producto: string }
+        Returns: {
+          cantidad: number
+          created_at: string
+          empresa_id: string
+          fecha: string
+          id: string
+          observaciones: string | null
+          producto_id: string
+          referencia_id: string | null
+          referencia_tipo: string | null
+          stock_resultante: number | null
+          tipo: Database["public"]["Enums"]["tipo_movimiento"]
+          usuario_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "movimientos_stock"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      registrar_venta: {
+        Args: {
+          p_cliente?: string
+          p_descuento?: number
+          p_empresa: string
+          p_items: Json
+          p_observaciones?: string
+          p_pagos: Json
+        }
+        Returns: {
+          anulada_at: string | null
+          anulada_por: string | null
+          caja_sesion_id: string
+          cliente_nombre: string | null
+          descuento: number
+          empresa_id: string
+          estado: Database["public"]["Enums"]["estado_venta"]
+          fecha: string
+          id: string
+          motivo_anulacion: string | null
+          numero: number
+          observaciones: string | null
+          pago_recibido: number
+          subtotal: number
+          total: number
+          usuario_id: string | null
+          vuelto: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "ventas"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -1232,128 +1584,6 @@ export type Database = {
           total: number
           total_anulado: number
         }[]
-      }
-      registrar_ajuste: {
-        Args: {
-          p_empresa: string
-          p_items: Json
-          p_motivo: Database["public"]["Enums"]["motivo_ajuste"]
-          p_observaciones?: string
-        }
-        Returns: {
-          created_at: string
-          empresa_id: string
-          fecha: string
-          id: string
-          motivo: Database["public"]["Enums"]["motivo_ajuste"]
-          numero: number
-          observaciones: string | null
-          usuario_id: string | null
-        }
-        SetofOptions: {
-          from: "*"
-          to: "ajustes"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
-      registrar_compra: {
-        Args: {
-          p_actualizar_costos?: boolean
-          p_empresa: string
-          p_fecha_comprobante?: string
-          p_items: Json
-          p_nro_comprobante?: string
-          p_observaciones?: string
-          p_pagada_desde_caja?: boolean
-          p_proveedor: string
-          p_tipo_comprobante?: string
-        }
-        Returns: {
-          actualizo_costos: boolean
-          anulada_at: string | null
-          anulada_por: string | null
-          caja_sesion_id: string | null
-          created_at: string
-          empresa_id: string
-          estado: Database["public"]["Enums"]["estado_compra"]
-          fecha: string
-          fecha_comprobante: string | null
-          id: string
-          motivo_anulacion: string | null
-          nro_comprobante: string | null
-          numero: number
-          observaciones: string | null
-          pagada_desde_caja: boolean
-          proveedor_id: string
-          tipo_comprobante: string | null
-          total: number
-          usuario_id: string | null
-        }
-        SetofOptions: {
-          from: "*"
-          to: "compras"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
-      registrar_stock_inicial: {
-        Args: { p_cantidad: number; p_obs?: string; p_producto: string }
-        Returns: {
-          cantidad: number
-          created_at: string
-          empresa_id: string
-          fecha: string
-          id: string
-          observaciones: string | null
-          producto_id: string
-          referencia_id: string | null
-          referencia_tipo: string | null
-          stock_resultante: number | null
-          tipo: Database["public"]["Enums"]["tipo_movimiento"]
-          usuario_id: string | null
-        }
-        SetofOptions: {
-          from: "*"
-          to: "movimientos_stock"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
-      registrar_venta: {
-        Args: {
-          p_cliente?: string
-          p_descuento?: number
-          p_empresa: string
-          p_items: Json
-          p_observaciones?: string
-          p_pagos: Json
-        }
-        Returns: {
-          anulada_at: string | null
-          anulada_por: string | null
-          caja_sesion_id: string
-          cliente_nombre: string | null
-          descuento: number
-          empresa_id: string
-          estado: Database["public"]["Enums"]["estado_venta"]
-          fecha: string
-          id: string
-          motivo_anulacion: string | null
-          numero: number
-          observaciones: string | null
-          pago_recibido: number
-          subtotal: number
-          total: number
-          usuario_id: string | null
-          vuelto: number
-        }
-        SetofOptions: {
-          from: "*"
-          to: "ventas"
-          isOneToOne: true
-          isSetofReturn: false
-        }
       }
     }
     Enums: {
@@ -1502,13 +1732,37 @@ export type Enums<
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never
 
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never) = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
 export const Constants = {
   public: {
     Enums: {
       estado_caja: ["abierta", "cerrada"],
       estado_compra: ["confirmada", "anulada"],
       estado_venta: ["confirmada", "anulada"],
-      medio_pago: ["efectivo", "debito", "credito", "transferencia", "billetera", "otro"],
+      medio_pago: [
+        "efectivo",
+        "debito",
+        "credito",
+        "transferencia",
+        "billetera",
+        "otro",
+      ],
       motivo_ajuste: [
         "conteo_fisico",
         "rotura",
@@ -1520,7 +1774,13 @@ export const Constants = {
         "devolucion",
         "otro",
       ],
-      origen_mov_caja: ["venta", "compra", "manual", "anulacion_venta", "anulacion_compra"],
+      origen_mov_caja: [
+        "venta",
+        "compra",
+        "manual",
+        "anulacion_venta",
+        "anulacion_compra",
+      ],
       rol_empresa: ["admin", "encargado", "vendedor", "consulta"],
       rubro_empresa: ["reposteria", "kiosco", "repuestos", "general"],
       tipo_mov_caja: ["ingreso", "egreso"],

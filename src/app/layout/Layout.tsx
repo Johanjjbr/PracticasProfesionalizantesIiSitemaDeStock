@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router';
-import { ChevronLeft, ChevronRight, LogOut, Store, User } from 'lucide-react';
+import { AlertTriangle, ChevronLeft, ChevronRight, LayoutGrid, LogOut, Store, User } from 'lucide-react';
+import { formatFechaCorta } from '@/lib/format';
 import { useAuth } from '@/auth/AuthProvider';
 import { ROL_LABEL, puedeVer } from '@/auth/permisos';
 import { Button } from '../components/ui/button';
@@ -11,6 +12,56 @@ import { RUBRO_LABEL } from '@/lib/rubros';
 import { ITEMS_MENU, MENU } from './menu';
 
 
+function AvisoSuscripcion({
+  estado,
+  pagadoHasta,
+  finGracia,
+  diasParaVencer,
+  esAdmin,
+  esSuperadmin,
+}: {
+  estado?: string;
+  pagadoHasta: string | null;
+  finGracia: string | null;
+  diasParaVencer: number | null;
+  esAdmin: boolean;
+  esSuperadmin: boolean;
+}) {
+  let texto: string | null = null;
+  let fuerte = false;
+  if (estado === 'suspendida' && esSuperadmin) {
+    texto = 'Esta empresa está suspendida: sus usuarios no pueden entrar. Estás viéndola como administrador de la plataforma.';
+    fuerte = true;
+  } else if (estado === 'vencida') {
+    texto = esSuperadmin
+      ? `Suscripción vencida desde el ${formatFechaCorta(pagadoHasta)}: los usuarios de esta empresa están en solo lectura.`
+      : `La suscripción venció el ${formatFechaCorta(pagadoHasta)}. El sistema está en modo solo lectura: podés consultar y exportar, pero no registrar ventas, compras ni cambios. Comunicate con el proveedor del sistema para regularizar.`;
+    fuerte = true;
+  } else if (estado === 'gracia') {
+    texto = `La suscripción venció el ${formatFechaCorta(pagadoHasta)}. Tenés hasta el ${formatFechaCorta(finGracia)} para regularizar; después el sistema queda en solo lectura.`;
+  } else if (estado === 'activa' && (esAdmin || esSuperadmin) && diasParaVencer != null && diasParaVencer <= 5) {
+    texto =
+      diasParaVencer === 0
+        ? 'La suscripción vence hoy.'
+        : `La suscripción vence en ${diasParaVencer} día${diasParaVencer === 1 ? '' : 's'} (${formatFechaCorta(pagadoHasta)}).`;
+  }
+  if (!texto) return null;
+  return (
+    <div
+      role="status"
+      className={cn(
+        'mb-4 flex items-start gap-3 rounded-md border px-4 py-3 text-sm',
+        fuerte
+          ? 'border-destructive/40 bg-destructive/10 text-foreground'
+          : 'border-amber-300 bg-amber-50 text-amber-950 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100',
+      )}
+    >
+      <AlertTriangle className={cn('w-4 h-4 mt-0.5 shrink-0', fuerte ? 'text-destructive' : 'text-amber-600')} />
+      <p>{texto}</p>
+    </div>
+  );
+}
+
 function fechaHoy() {
   const t = new Date().toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   return t.charAt(0).toUpperCase() + t.slice(1);
@@ -18,7 +69,7 @@ function fechaHoy() {
 
 export default function Layout() {
   const [colapsado, setColapsado] = useState(false);
-  const { perfil, empresa, rol, membresias, seleccionarEmpresa, cerrarSesion } = useAuth();
+  const { perfil, empresa, rol, rolReal, membresias, seleccionarEmpresa, cerrarSesion, suscripcion } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -123,6 +174,16 @@ export default function Layout() {
 
         {/* Usuario */}
         <div className="border-t border-sidebar-border p-4">
+          {perfil?.superadmin && (
+            <Link
+              to="/plataforma"
+              title="Plataforma"
+              className="mb-2 flex items-center gap-3 px-3 py-2 rounded-md text-sm hover:bg-sidebar-accent"
+            >
+              <LayoutGrid className="w-4 h-4 shrink-0" />
+              {!colapsado && 'Plataforma'}
+            </Link>
+          )}
           {!colapsado ? (
             <div className="space-y-2">
               <Link
@@ -135,7 +196,7 @@ export default function Layout() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm truncate">{perfil?.nombre ?? perfil?.email}</p>
-                  <p className="text-xs text-sidebar-foreground/60">{rol ? ROL_LABEL[rol] : ''}</p>
+                  <p className="text-xs text-sidebar-foreground/60">{rolReal ? ROL_LABEL[rolReal] : ''}{rolReal && rol !== rolReal ? ' · solo lectura' : ''}</p>
                 </div>
               </Link>
               <Button
@@ -177,6 +238,14 @@ export default function Layout() {
           <div className="text-sm text-muted-foreground">{fechaHoy()}</div>
         </header>
         <main className="flex-1 overflow-auto p-6">
+          <AvisoSuscripcion
+            estado={suscripcion?.estado}
+            pagadoHasta={suscripcion?.pagadoHasta ?? null}
+            finGracia={suscripcion?.finGracia ?? null}
+            diasParaVencer={suscripcion?.diasParaVencer ?? null}
+            esAdmin={rolReal === 'admin'}
+            esSuperadmin={!!perfil?.superadmin}
+          />
           <Outlet />
         </main>
       </div>
