@@ -1,54 +1,71 @@
 import { createBrowserRouter, Navigate } from 'react-router';
-import Login from './pages/Login';
-import CreatePassword from './pages/CreatePassword';
-import Layout from './components/Layout';
-import ProtectedRoute from './components/ProtectedRoute';
-import Dashboard from './pages/Dashboard';
-import Inventory from './pages/Inventory';
-import Transfers from './pages/Transfers';
-import Reception from './pages/Reception';
-import Suppliers from './pages/Suppliers';
-import Reports from './pages/Reports';
-import Settings from './pages/Settings';
-import GoodsReceipt from './pages/GoodsReceipt';
-import InventoryAdjustment from './pages/InventoryAdjustment';
-import UserManual from './pages/UserManual';
+import { RequireAuth, RequireRol } from '@/auth/guards';
+import Layout from './layout/Layout';
+import { ITEMS_MENU } from './layout/menu';
+import EnConstruccion from './pages/EnConstruccion';
+import LoginPage from '@/features/auth/LoginPage';
+import RecuperarPasswordPage from '@/features/auth/RecuperarPasswordPage';
+import NuevaPasswordPage from '@/features/auth/NuevaPasswordPage';
+import DashboardPage from '@/features/dashboard/DashboardPage';
+import ProductosPage from '@/features/productos/ProductosPage';
+import ProveedoresPage from '@/features/proveedores/ProveedoresPage';
+import AjustesPage from '@/features/stock/AjustesPage';
+import MovimientosPage from '@/features/stock/MovimientosPage';
+import ComprasPage from '@/features/compras/ComprasPage';
+import NuevaCompraPage from '@/features/compras/NuevaCompraPage';
+import CajaPage from '@/features/caja/CajaPage';
+import VentasPage from '@/features/ventas/VentasPage';
+import ReportesPage from '@/features/reportes/ReportesPage';
+import UsuariosPage from '@/features/usuarios/UsuariosPage';
+import ConfiguracionPage from '@/features/configuracion/ConfiguracionPage';
+import MiCuentaPage from '@/features/configuracion/MiCuentaPage';
+
+/** Pantallas ya implementadas. El resto del menú muestra "En construcción". */
+const PANTALLAS: Record<string, React.ReactElement> = {
+  '/dashboard': <DashboardPage />,
+  '/productos': <ProductosPage />,
+  '/proveedores': <ProveedoresPage />,
+  '/stock/ajustes': <AjustesPage />,
+  '/stock/movimientos': <MovimientosPage />,
+  '/compras': <ComprasPage />,
+  '/caja': <CajaPage />,
+  '/ventas': <VentasPage />,
+  '/reportes': <ReportesPage />,
+  '/usuarios': <UsuariosPage />,
+  '/configuracion': <ConfiguracionPage />,
+};
 
 export const router = createBrowserRouter([
-  {
-    path: '/',
-    element: <Navigate to="/login" replace />,
-  },
-  {
-    path: '/login',
-    element: <Login />,
-  },
-  {
-    path: '/create-password',
-    element: <CreatePassword />,
-  },
+  { path: '/login', element: <LoginPage /> },
+  { path: '/recuperar-password', element: <RecuperarPasswordPage /> },
+  { path: '/nueva-password', element: <NuevaPasswordPage /> },
   {
     path: '/',
     element: (
-      <ProtectedRoute>
+      <RequireAuth>
         <Layout />
-      </ProtectedRoute>
+      </RequireAuth>
     ),
     children: [
-      { path: 'dashboard', element: <Dashboard /> },
-      { path: 'inventory', element: <Inventory /> },
-      { path: 'transfers', element: <Transfers /> },
-      { path: 'reception', element: <Reception /> },
-      { path: 'suppliers', element: <Suppliers /> },
-      { path: 'goods-receipt', element: <GoodsReceipt /> },
-      { path: 'inventory-adjustment', element: <InventoryAdjustment /> },
-      { path: 'reports', element: <Reports /> },
-      { path: 'settings', element: <Settings /> },
-      { path: 'manual', element: <UserManual /> },
+      { index: true, element: <Navigate to="/dashboard" replace /> },
+      ...ITEMS_MENU.map((item) => ({
+        path: item.ruta.slice(1),
+        element: (
+          <RequireRol ruta={item.ruta}>
+            {PANTALLAS[item.ruta] ?? <EnConstruccion titulo={item.label} fase={item.fase} />}
+          </RequireRol>
+        ),
+      })),
+      { path: 'mi-cuenta', element: <MiCuentaPage /> },
+      {
+        path: 'compras/nueva',
+        element: (
+          <RequireRol ruta="/compras">
+            <NuevaCompraPage />
+          </RequireRol>
+        ),
+      },
     ],
   },
-  {
-    path: '*',
-    element: <Navigate to="/login" replace />,
-  },
+  { path: '*', element: <Navigate to="/" replace /> },
 ]);

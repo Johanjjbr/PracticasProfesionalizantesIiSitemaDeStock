@@ -1,3 +1,13 @@
 @import './fonts.css';
 @import './tailwind.css';
 @import './theme.css';
+
+/* Gráficos: serie única (validada con el checker de paleta: contraste ≥ 3:1 en ambos modos) */
+:root {
+  --serie-1: #2a78d6;
+  --grilla: #e5e7eb;
+}
+.dark {
+  --serie-1: #3987e5;
+  --grilla: #334155;
+}
